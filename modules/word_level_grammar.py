@@ -1,14 +1,21 @@
 import re
+import joblib
 
+import sys
+sys.path.append('..')  # Assuming the parent directory of 'pos_tagging' is the current working directory
+from pos_tagging.commons import word_features
 """
 this class is responsible for handling the grammer of the arabic words
 using a rule based approach. but it assumes that all the sentences are 
 separated using punctuation marks.
 we are also assuming that there is no errors in the verbs spelling entered by the user
 """
-class Grammer():
+class WordLevelGrammer():
     
     def __init__(self):
+
+        # load the crf model to check if the word is a verb or not
+        self.crf_model = joblib.load('../pos_tagging/models/crf_model.joblib')
         
         self.alef_wasl = ['ابن', 'ابنة', 'ابنان', 'ابنتان', 'اثنان', 'اثنتان', 'اسم', 'اسمان', 'امرؤ', 'امرأة', 'امرآن', 'امرأتان', 'ايم الله', 'ايمن الله']
        
@@ -19,10 +26,22 @@ class Grammer():
         # these are the kana and its sisters cases that most of time there is a deletion for esm kana
         self.kana_and_sisters_remove_esm_kana = ['كنت', 'كنا', 'كنتم', 'كنتما', 'كنتن', 'تكونون', 'تكونان', 
                                                  'وكنت', 'وكنتم', 'وكنتما', 'وكنتن', 'وتكونون', 'وتكونان']
+        
+        self.enna_and_sisters = ["إن", "أن", "كأن", "لكن", "ليت", "لعل"]
+        
+        self.enna_and_sisters_remove_esm_enna = ["إنهم", "إنكم", "إنه", "إنها", "إننا", "إنكن", "إنك", "إني", "إنا",
+                                                 "أنهم", "أنكم", "أنه", "أنها", "أننا", "أنكن", "أنك", "أني", "أنا", 
+                                                 "كأنهم", "كأنكم", "كأنه", "كأنها", "كأننا", "كأنكن", "كأنك", "كأني", "كأنا",
+                                                 "لكنهم", "لكنكم", "لكنه", "لكنها", "لكننا", "لكنكن", "لكنك", "لكني", "لكنا",
+                                                 "ليتهم", "ليتكم", "ليته", "ليتها", "ليتنا", "ليتكن", "ليتك", "ليتي", "ليتا", 
+                                                 "لعلهم", "لعلكم", "لعله", "لعلها", "لعلنا", "لعلكن", "لعلك", "لعلي", "لعلن"]
+        
 
         self.pronouns = {'هذا': ['mufrad', 'masc'], 'هذه': ['mufrad', 'fem'], 
-                         'هذان': ['muthanna', 'masc'], 'هذين':['muthanna', 'masc'], 'هاتان': ['muthanna', 'fem'], 'هاتين':['muthanna', 'fem'],
-                           'هؤلاء': ['jam3', 'both'], 'ذلك': ['mufrad', 'masc'], 'تلك': ['mufrad', 'fem'], 'أولئك': ['jam3', 'both']}
+                         'هذان': ['muthanna', 'masc'], 'هذين':['muthanna', 'masc'], 
+                         'هاتان': ['muthanna', 'fem'], 'هاتين':['muthanna', 'fem'],
+                         'هؤلاء': ['jam3', 'both'],
+                         'ذلك': ['mufrad', 'masc'], 'تلك': ['mufrad', 'fem'], 'أولئك': ['jam3', 'both']}
 
         self.prepositions = ['في', 'على', 'من', 'إلى', 'عن']
 
@@ -48,7 +67,7 @@ class Grammer():
         self.place_words = ["هنا", "فوق", "تحت", "أمام", "قدام", "وراء", "خلف", "إزاء", "تلقاء", "عند", "حذاء", "ثم"]
         
         # most of the verbs patterns   
-        self.verbs_shapes = ['فعل', 'فععل', 'افعل', 'أفعل', 'تفاعل', 'إنفعل', 'انفعل', 'استفعل', 'إستفعل', 'استعل', 'إستعل', 'يفعل', 'افل', 'أفعل']
+        #self.verbs_shapes = ['فعل', 'فععل', 'افعل', 'أفعل', 'تفاعل', 'إنفعل', 'انفعل', 'استفعل', 'إستفعل', 'استعل', 'إستعل', 'يفعل', 'افل', 'أفعل']
 
         # the tools that are used to make the verb mansoob
         self.verb_nasb_tools = ['أن', 'لن', 'كي', 'حتى', 'ل'] 
@@ -57,53 +76,11 @@ class Grammer():
         self.verb_jazm_tools = ['لم', 'لما']
         self.la_alnahya = ['لا']    # sperated to handle the case of la alnahya alone
 
+        self.hamza_known_words = ["إلينا", "إليكم", "إاليهم", "إليك", "إليه", "إليها", "إليهن", "إلي", "إليهما", "إليهما", "إليكما"]
 
 
 
-    """
-    check if the word is alef wasl or not
-    """
-    def is_alef_wasl(self, word):
-        if word.startswith('ال') or word.startswith('أل'):
-            word = word[2:]
-        if word.startswith('أ'): # check if it has hamza at the beginning
-            word = word[2:]
-        return word in self.alef_wasl
 
-
-    """
-    check if the word is feminine or masculine
-    """
-    def check_gender(arabic_word):
-        masculine_endings = ['ون', 'ان', 'ين', 'ي', 'ا', 'و']
-        feminine_endings = ['ة', 'ات']
-
-        if any(arabic_word.endswith(ending) for ending in masculine_endings):
-            return 'Masculine'
-        elif any(arabic_word.endswith(ending) for ending in feminine_endings):
-            return 'Feminine'
-        return 'Unknown'
-  
-    """
-    check if the word is dual(muthanna) or not 
-    """
-    def is_dual(self, word):
-        if word in self.essential_verbs or word in self.kana_and_sisters_regular:
-            return False
-        dual_endings = ['ان', 'تان']
-        if any(word.endswith(ending) for ending in dual_endings):
-            return True
-        return False
-
-    """
-    check if the word is a plural or not
-    """
-    def check_plural(arabic_word):
-        plural_endings = ['ون', 'ين', 'ات']
-
-        if any(arabic_word.endswith(ending) for ending in plural_endings):
-            return True
-        return False
     
     """
     stemm the words from any additons
@@ -121,65 +98,26 @@ class Grammer():
             return word[:-2]
         elif word.endswith('ت') or word.endswith('ا'):
             return word[:-1]
-        # if word.startswith('و'):
-        #     return word[1:]
+
         if word == initial:
             count +=1
         return word
+    
         
+    """
+    function to return the indeces of the verbs in the list of words
+    """
+    def get_verbs_indeces(self, words):
+        verbs_indeces = []
+        sentence = list(zip(words, ['' for _ in range(len(words))]))
+        X_new = [word_features(sentence, i) for i in range(len(sentence))]
+        y_pred = self.crf_model.predict([X_new])[0]
+        for word, tag in zip(words, y_pred):
+            if 'VERB' in tag or 'AUX' in tag:
+                verbs_indeces.append(words.index(word))
+        return verbs_indeces
 
-    """
-    check if the word is a verb or not
-    uses the utility function stemm_word to check on the verb
-    handle most of the verbs cases, but not all past tense verbs that has only three characters 
-    """
-    def is_verb(self, word, prev_word = None):
-        # check if the prev word is a preposition or a time word or a place word
-        # as this prevent the word after them to be a verb
-        if (prev_word in self.prepositions or 
-            prev_word in self.time_words or
-            prev_word in self.place_words):
-            return False
-        if len(word) < 2:
-            return False
-        if (word in self.prepositions or
-            word in self.pronouns or
-            word in self.place_words or 
-            word in self.time_words):
-            return False
-        if (word in self.essential_verbs or 
-            word in self.verbs_shapes or 
-            word in self.kana_and_sisters_regular or
-            word in self.kana_and_sisters_remove_esm_kana):
-            return True
-        
-        if word.startswith('ال') or word.startswith('أل') or word.startswith('م'):
-            return False
-        
-        sub_word = self.stemm_word(word)
-        if (sub_word in self.essential_verbs or 
-            sub_word in self.verbs_shapes or 
-            sub_word in self.kana_and_sisters_regular or
-            sub_word in self.kana_and_sisters_remove_esm_kana):
-            return True
-        
-        if (sub_word.startswith('ا') or 
-            sub_word.startswith('ي') or 
-            sub_word.startswith('ت') or
-            sub_word.startswith('ن')):
-            return True
-        
-        verb_patterns = [
-            r'^س([أ-ي]{2,})$',  # Future tense pattern like "سيتعلم"
-            r'^ي([أ-ي]{2,})$',  # Present tense pattern like "يتعلم"
-            r'^ت([أ-ي]{2,})$',  # Present tense pattern like "تعمل"
-            r'^ن([أ-ي]{2,})$',  # Present tense pattern like "نأكل"
-        ]
-        
-        for pattern in verb_patterns:
-            if re.match(pattern, word):
-                return True
-        return False
+
 
 
     """
@@ -188,20 +126,9 @@ class Grammer():
     the word length is equal to 3 then it is probably verbal sentence
     """
     def is_verbal_sentence(self, words):
-        sub_word = words[0]
-        if (sub_word in self.kana_and_sisters_regular or 
-            sub_word in self.essential_verbs or 
-            sub_word in self.verbs_shapes or 
-            sub_word in self.kana_and_sisters_remove_esm_kana):
-            return True  
-        if (len(sub_word) == 3 and 
-            sub_word not in self.prepositions and 
-            sub_word not in self.pronouns and 
-            sub_word not in self.place_words and 
-            sub_word not in self.time_words):
-            return True
-        
-        if self.is_verb(sub_word):
+        verbs_indeces = self.get_verbs_indeces(words)
+        x = 0
+        if x in verbs_indeces:
             return True
         return False
     
@@ -215,46 +142,67 @@ class Grammer():
     the rule is:
         1- if the word starts with 'الا' then replace it with 'الأ'
         2- if the word starts with 'ال' or 'أل' then replace it with 'ال'
-        3- quadratic verbs should start with 'إ' (most cases in arabic)
+        3- quadratic verbs should start with 'أ' (most cases in arabic)
         4- quadratic nouns should start with 'أ' (most cases in arabic)
         5- triple verbs or nouns should start with 'أ' (most cases in arabic)
         6- larger than 4 letters should start with 'ا' (most cases in arabic)
         7- if the word is one character difference from a defined word then change it to the defined word
            using the utility function is_similar
     """
-    # utility function to check if two words are similar
-    def is_similar(self, word, prop):
-        if len(word) != len(prop):
-            return False
-        differences = sum(char1 != char2 for char1, char2 in zip(word, prop))
-        return differences <= 1
-    
-    def handle_hamzat(self, word):
-        # check if the word is a preposition, time word, or place word to handle the hamzat 
-        for prop in self.prepositions + self.time_words + self.place_words:
-            if ((prop[0] == 'ا' or prop[0] == 'أ' or prop[0] == 'إ' or prop[0] == 'آ') and 
-                (word[0] == 'ا' or word[0] == 'أ' or word[0] == 'إ' or word[0] == 'آ')):
-                if self.is_similar(word[1:], prop[1:]):
-                    # Perform desired action when the word is similar to a prop
-                    word = prop[0] + word[1:]
-                    return word
-        if word.startswith('الا'):
-            return 'الأ' + word[3:]
-        if word.startswith('ال') or word.startswith('أل'):
-            return 'ال' + word[2:]
+    # utility function to check if the word is already defined in the class
+    def is_similar(self, word):
+        for key, value in self.__dict__.items():
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, str):
+                        if word == item and (word[0] == 'أ' or word[0] == 'إ' or word[0] == 'آ' or word[0] == 'ا'):
+                            return word, 1
+                        elif((item[0] == 'أ' or item[0] == 'إ' or item[0] == 'آ' or item[0] == 'ا') and 
+                             (word[0] == 'ا' or word[0] == 'أ' or word[0] == 'إ' or word[0] == 'آ')):
+                            if word[1:] == item[1:]:
+                                return item, 1
+        return word, 0
         
-        if word.startswith('أ') or word.startswith('إ') or word.startswith('آ') or word.startswith('ا'): 
-            if len(self.stemm_word(word)) > 4:
-              return 'ا' + word[1:]
-            elif len(self.stemm_word(word)) == 4 and self.is_verb(word): 
-                return 'إ' +word[1:]
-            elif len(self.stemm_word(word)) == 4 and not self.is_verb(word):
-                return 'أ' + word[1:]
-            elif len(self.stemm_word(word)) == 3:
-                return 'أ' + word[1:]
-        return word
-    
+    def handle_hamzat(self, words):
+        verb_indeces = self.get_verbs_indeces(words)
+        for i in range(len(words)): 
+            returned_word, flag = self.is_similar(words[i])
+            if flag:
+                words[i] = returned_word
+                if len(words[i]) == 2: # most of time for defined words of size 2, the first letter should be 'أ' not 'إ
+                    words[i] = 'أ' + words[i][1:]
+                continue
 
+            # second case is handling the verbs
+            elif (i in verb_indeces or
+                 words[i] in self.kana_and_sisters_regular or 
+                 words[i] in self.kana_and_sisters_remove_esm_kana):
+                stemmed_word = self.stemm_word(words[i])
+                if stemmed_word[0] == 'أ' or stemmed_word[0] == 'إ' or stemmed_word[0] == 'آ' or stemmed_word[0] == 'ا':
+                    if len(stemmed_word) > 4:
+                        words[i] = 'ا' + words[i][1:]
+                    elif len(stemmed_word) == 4:
+                        words[i] = 'أ' + words[i][1:]
+                    elif len(stemmed_word) == 3:
+                        words[i] = 'أ' + words[i][1:]
+
+            else:
+                if words[i].startswith('الا'):
+                    words[i] = 'الأ' + words[i][3:]
+                elif words[i].startswith('ال') or words[i].startswith('أل'):
+                    words[i] = 'ال' + words[i][2:]
+                elif words[i][0] == 'ا' or words[i][0] == 'أ' or words[i][0] == 'إ' or words[i][0] == 'آ':
+                    if len(words[i]) > 4:
+                        words[i] = 'ا' + words[i][1:]
+                    elif len(words[i]) == 4:
+                        words[i] = 'أ' + words[i][1:]
+                    elif len(words[i]) == 3:
+                        words[i] = 'أ' + words[i][1:]
+
+        return words
+                                    
+
+        
     
     """
     handle the after proposition words
@@ -273,10 +221,10 @@ class Grammer():
     function to handle if the verb is mansoub 
     """
     def handle_verb_shape_mansoob(self, words):
-        prev_word = words[0]
+        verb_indeces = self.get_verbs_indeces(words)
         for i in range(1, len(words)):
-            prev_word = words[i-1]
-            if self.is_verb(words[i], prev_word):
+            if i in verb_indeces:
+                prev_word = words[i-1]
                 if prev_word in self.verb_nasb_tools:
                     if (words[i].endswith('ون') or words[i].endswith('ين')) and (words[i][0] == 'ي' or words[i][0] == 'ت'):
                         words[i] = words[i][:-2] + "وا"
@@ -284,15 +232,15 @@ class Grammer():
                         words[i] = words[i][:-1]
         return words
     
+
     """
     function to handle if the verb is majzoom
     """
     def handle_verb_shape_majzoom(self, words):
-        prev_word = words[0]
-        prev_word = words[0]
+        verbs_indeces = self.get_verbs_indeces(words)
         for i in range(1, len(words)):
-            prev_word = words[i-1]
-            if self.is_verb(words[i], prev_word):
+            if i in verbs_indeces:
+                prev_word = words[i-1]
                 if prev_word in self.verb_jazm_tools:
                     if (words[i].endswith('ون') or words[i].endswith('ين')) and (words[i][0] == 'ي' or words[i][0] == 'ت'):
                         words[i] = words[i][:-2] + "وا"
@@ -309,19 +257,29 @@ class Grammer():
         return words
     
 
+
+    """
+    handle the pronouns and what is after them
+    """
+    def handle_pronouns(self, words):
+        if words[0] in self.pronouns.keys():
+            if self.pronouns[words[0]] == ['muthanna', 'masc']:
+                words[0] = 'هذان'
+            elif self.pronouns[words[0]] == ['muthanna', 'fem']:
+                words[0] = 'هاتان'
+        return words
+        
             
         
     """###############################    the main functions      ############################"""
 
     def handle_word_level_errors(self, words):
-        new_words = []
-        for word in words:
-            handled_word = self.handle_hamzat(word)
-            new_words.append(handled_word)
-        handeled_words_propsositions = self.handle_after_propositions_words(new_words)
+        hamza_handled_words = self.handle_hamzat(words)
+        handeled_words_propsositions = self.handle_after_propositions_words(hamza_handled_words)
         verb_mansoob_shapes_handeled = self.handle_verb_shape_mansoob(handeled_words_propsositions)
         verb_majzoom_shapes_handeled = self.handle_verb_shape_majzoom(verb_mansoob_shapes_handeled)
-        return verb_majzoom_shapes_handeled
+        pronouns_handled = self.handle_pronouns(verb_majzoom_shapes_handeled)
+        return pronouns_handled
     
 
 
