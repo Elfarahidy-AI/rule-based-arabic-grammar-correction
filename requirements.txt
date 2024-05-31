@@ -1,0 +1,9 @@
+# requirements.txt
+
+# Basic dependencies
+enum34==1.1.10
+numpy==1.22.0
+
+
+# Arabic language processing
+pyarabic==0.6.10
