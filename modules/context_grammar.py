@@ -1,84 +1,58 @@
-from .word_level_grammar import WordLevelGrammar
+from word_level_grammar import WordLevelGrammer
 
 class ContextGrammar:
     def __init__(self):
-        self.wlg = WordLevelGrammar()
+        self.wlg = WordLevelGrammer()
 
+    """
+    handle sentence after هنا و هناك untill you find a something that is not a pronoun
+    """
+    def handle_after_hona_w_honak(self, words):
+        for word in self.wlg.hona_w_honak:
+            if word in words:
+                i = words.index(word) + 1
+                if words[i].endswith('ان') or words[i+1].endswith('ان') or words[i-1].endswith('ان') or words[i-1].endswith('ين'):
+                    while i < len(words) and (words[i].endswith('ان') or words[i].endswith('ون') or words[i].endswith('ين')):
+                        words[i] = words[i][:-2] + "ان"
+                        i += 1
+                elif words[i].endswith('ون') or words[i].endswith('ين'):
+                    while i < len(words) and (words[i].endswith('ان') or words[i].endswith('ون') or words[i].endswith('ين')):
+                        words[i] = words[i][:-2] + "ون"
+                        i += 1
+        return words
     
-        
 
-# """
-# function to keep the words consistent along the sentence
-# all the words should be in the same form (singular, dual, plural)
-# """
-# def keep_consistent(self, words):
-#     pass
-
-
-
-# """
-# function to keep the shape (e3rab) of the words consistent along the sentence
-# all the words should be in the same shape (marfoo3, mansoob, majroor)
-# """
-# def keep_shape_consistent(self, words):
-#     pass
-
-
-    
-# """
-# handle the after pronouns words(asma2 el eshara)
-# """
-# def handle_after_pronouns(self, words):
-#     return words
+    def handle_asmaa_eleshara(self, words):
+        pass
     
 
 
-# """
-# handle kana and its sisters
-# and handled the muthanna case
-# """
-# def handle_kana(self, words):
-#     return words
-    
 
 
-# """
-# handle kana and its sisters
-# and handled the muthanna case
-# """
-# def handle_kana(self, words):
-#     muthanna = False # flag to check if the coming words has a muthanna word or not
-#     for word in words:
-#         if self.is_dual(word):
-#             muthanna = True
-#             break
-#     for word in words:
-#         if word in self.kana_and_sisters_regular:
-#             kana_index = words.index(word)
-#             # the case that the coming is esm kana
-#             if words[kana_index + 1].startswith('ال') or words[kana_index + 1].startswith('أل'):
-#                 if words[kana_index + 1].endswith('ين') and not muthanna:
-#                     words[kana_index +1 ] = words[kana_index + 1][:-2] + "ون"
-#                 elif words[kana_index + 1].endswith('ين') and muthanna:
-#                     words[kana_index +1 ] = words[kana_index + 1][:-2] + "ان"
-#                 i = kana_index + 2
-#                 while words[i].endswith('ين') or words[i].endswith('ون') or words[i].endswith('ان'):
-#                     if (words[i].startswith('ال') or words[i].startswith('أل')):
-#                         if not self.is_verb(words[i]) and not self.is_dual(words[i]):
-#                             words[i] = words[i][:-2] + "ون"
-#                         elif self.is_dual(words[i]) and not self.is_verb(words[i]):
-#                             words[i] = words[i][:-2] + "ان"
-#                     elif not words[i].startswith('أل') and not words[i].startswith('أل'):
-#                         if not self.is_verb(words[i]):
-#                             words[i] = words[i][:-2] + "ين"
-#                     i += 1
 
-#             # the case that the comming is khabr kana
-#             elif not words[kana_index + 1].startswith('أل') and not words[kana_index + 1].startswith('ال') and not self.is_verb(words[kana_index + 1]):
-#                 if words[kana_index + 1].endswith('ون') or words[kana_index + 1].endswith('ان'):
-#                     words[kana_index +1 ] = words[kana_index + 1][:-2] + "ين"
-#                 i = kana_index + 2
-#                 while words[i].endswith('ون'):
-#                     words[i] = words[i][:-2] + "ين"
-#                     i += 1
-#     return words
+                
+    """
+    handle kana sentences and use the utility function to handle the kana words
+    """
+    def kana_utility(self, current_word, next_word):
+        if current_word.startswith('ال'):
+            if (current_word.endswith('ين') or current_word.endswith('ون'))and next_word.endswith('ان'): # we can detect that it is dual
+                return current_word[:-2] + "ان"
+            else:    # it is plural and mansoba
+                return current_word[:-2] + "ون"
+        elif not current_word.startswith('ال') and next_word.startswith('ال'):
+            if (current_word.endswith('ون') or current_word.endswith('ين')) and (not current_word.endswith('عاون') and not current_word.endswith('هاون')):
+                return current_word[:-2] + "و" # case of hazf el non lel edafa
+            elif current_word.endswith('ان'):
+                return current_word[:-2] + "ا"
+        return current_word
+
+
+    def handle_kana(self, words):
+        verbs_indeces = self.wlg.get_verbs_indeces(words)
+        for i in range(len(words) - 2):
+            if words[i] in self.wlg.kana_and_sisters_regular or words[i][1:] in self.wlg.kana_and_sisters_regular:
+                if i+1 not in verbs_indeces: # only work on no verbs words
+                    words[i+1] = self.kana_utility(words[i+1], words[i+2])
+  
+        return words

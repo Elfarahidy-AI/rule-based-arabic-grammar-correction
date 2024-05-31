@@ -20,12 +20,18 @@ class WordLevelGrammer():
         self.alef_wasl = ['ابن', 'ابنة', 'ابنان', 'ابنتان', 'اثنان', 'اثنتان', 'اسم', 'اسمان', 'امرؤ', 'امرأة', 'امرآن', 'امرأتان', 'ايم الله', 'ايمن الله']
        
         # these the are the kana and its sisters cases that most of time there is no deletion for esm kana
-        self.kana_and_sisters_regular = ['كان', 'كانت', 'يكون', 'تكون', 'أكون', 'نكون', 'تكن',
-                                         'وكان', 'وكانت', 'ويكون', 'وتكون', 'وأكون', 'ونكون', 'وتكن'] 
+        self.kana_and_sisters_regular = ['كان', 'كانت', 'يكون', 'تكون',
+                                         'أصبح', 'أصبحت', 'يصبح', 'تصبح',
+                                         'أمسى', 'أمسيت', 'تمسي', 'يمسي',
+                                         'صار', 'يصير', 'تصير',
+                                         'بات', 'يبيت', 'تبيت', 
+                                         'أضحى', 'تضحى', 'يضحى',
+                                         'ظل', 'يظل', 'تظل',
+                                         'مازال', 'مايزال', 'ماتزال']
+        
 
         # these are the kana and its sisters cases that most of time there is a deletion for esm kana
-        self.kana_and_sisters_remove_esm_kana = ['كنت', 'كنا', 'كنتم', 'كنتما', 'كنتن', 'تكونون', 'تكونان', 
-                                                 'وكنت', 'وكنتم', 'وكنتما', 'وكنتن', 'وتكونون', 'وتكونان']
+        self.kana_and_sisters_remove_esm_kana = ['كنت', 'كنا', 'كنتم', 'كنتما', 'كنتن', 'تكونون', 'تكونان', 'نكون', 'تكن' ]
         
         self.enna_and_sisters = ["إن", "أن", "كأن", "لكن", "ليت", "لعل"]
         
@@ -42,6 +48,8 @@ class WordLevelGrammer():
                          'هاتان': ['muthanna', 'fem'], 'هاتين':['muthanna', 'fem'],
                          'هؤلاء': ['jam3', 'both'],
                          'ذلك': ['mufrad', 'masc'], 'تلك': ['mufrad', 'fem'], 'أولئك': ['jam3', 'both']}
+        
+        self.hona_w_honak = ['هنا', 'هناك']
 
         self.prepositions = ['في', 'على', 'من', 'إلى', 'عن']
 
