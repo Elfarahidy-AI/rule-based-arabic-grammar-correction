@@ -56,3 +56,11 @@ class ContextGrammar:
                     words[i+1] = self.kana_utility(words[i+1], words[i+2])
   
         return words
+    
+
+
+    """"####################################################### main function #######################################################"""
+    def handle_context_level_errors(self,words):
+        after_hona_honak = self.handle_after_hona_w_honak(words)
+        kana_handeled = self.handle_kana(after_hona_honak)
+        return kana_handeled
