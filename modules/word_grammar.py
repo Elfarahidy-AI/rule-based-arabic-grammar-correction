@@ -1,8 +1,8 @@
 import re
 import joblib
 
-import sys
-sys.path.append('..')  # Assuming the parent directory of 'pos_tagging' is the current working directory
+
+  # Assuming the parent directory of 'pos_tagging' is the current working directory
 from pos_tagging.commons import word_features
 """
 this class is responsible for handling the grammer of the arabic words
@@ -15,7 +15,7 @@ class WordLevelGrammer():
     def __init__(self):
 
         # load the crf model to check if the word is a verb or not
-        self.crf_model = joblib.load('../pos_tagging/models/crf_model.joblib')
+        self.crf_model = joblib.load('models/crf_model.joblib')
         
         self.alef_wasl = ['ابن', 'ابنة', 'ابنان', 'ابنتان', 'اثنان', 'اثنتان', 'اسم', 'اسمان', 'امرؤ', 'امرأة', 'امرآن', 'امرأتان', 'ايم الله', 'ايمن الله']
        
@@ -116,13 +116,27 @@ class WordLevelGrammer():
     function to return the indeces of the verbs in the list of words
     """
     def get_verbs_indeces(self, words):
-        verbs_indeces = []
+        verbs_indeces1 = []
+        verbs_indeces2 = []
         sentence = list(zip(words, ['' for _ in range(len(words))]))
         X_new = [word_features(sentence, i) for i in range(len(sentence))]
         y_pred = self.crf_model.predict([X_new])[0]
         for word, tag in zip(words, y_pred):
             if 'VERB' in tag or 'AUX' in tag:
-                verbs_indeces.append(words.index(word))
+                verbs_indeces1.append(words.index(word))
+        
+        # remove wow from all the words and try to find verbs again
+        for i in range(len(words)):
+            if word.startswith('و'):
+                words[i] = words[i][1:]
+        sentence = list(zip(words, ['' for _ in range(len(words))]))
+        X_new = [word_features(sentence, i) for i in range(len(sentence))]
+        y_pred = self.crf_model.predict([X_new])[0]
+        for word, tag in zip(words, y_pred):
+            if 'VERB' in tag or 'AUX' in tag:
+                verbs_indeces2.append(words.index(word))
+        
+        verbs_indeces = sorted(list(set(verbs_indeces1 + verbs_indeces2)))
         return verbs_indeces
 
 
@@ -224,6 +238,22 @@ class WordLevelGrammer():
                     j += 1
         return words
 
+    """
+    function to handle if the verb is marfou3
+    """
+    def handle_verb_shape_marfou3(self, words):
+        verb_indeces = self.get_verbs_indeces(words)
+        for i in range(len(words)):
+            if i in verb_indeces:
+                prev_word = words[i-1]
+                if prev_word not in self.verb_nasb_tools and prev_word not in self.verb_jazm_tools:
+                    if words[i].endswith('ا') and not words[i].endswith('وا'): # dual case
+                        words[i] = words[i] + 'ن'
+                    elif words[i].endswith('ين') or words[i].endswith('وا'):
+                        words[i] = words[i][:-2] + 'ون'
+
+        return words
+
 
     """
     function to handle if the verb is mansoub 
@@ -260,8 +290,8 @@ class WordLevelGrammer():
                     if words[i].startswith('ت'):
                         if words[i].endswith('ون') or words[i].endswith('ين'):
                             words[i] = words[i][:-2] + "وا"
-                    elif words[i].endswith('ان') or words[i].endswith('ن'):
-                        words[i] = words[i][:-1]
+                        elif words[i].endswith('ان') or words[i].endswith('ن'):
+                            words[i] = words[i][:-1]
         return words
     
 
@@ -286,7 +316,8 @@ class WordLevelGrammer():
         handeled_words_propsositions = self.handle_after_propositions_words(hamza_handled_words)
         verb_mansoob_shapes_handeled = self.handle_verb_shape_mansoob(handeled_words_propsositions)
         verb_majzoom_shapes_handeled = self.handle_verb_shape_majzoom(verb_mansoob_shapes_handeled)
-        pronouns_handled = self.handle_pronouns(verb_majzoom_shapes_handeled)
+        verb_marfou3_shapes_handeled = self.handle_verb_shape_marfou3(verb_majzoom_shapes_handeled)
+        pronouns_handled = self.handle_pronouns(verb_marfou3_shapes_handeled)
         return pronouns_handled
     
 

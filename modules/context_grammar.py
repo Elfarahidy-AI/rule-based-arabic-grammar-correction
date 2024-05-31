@@ -1,4 +1,4 @@
-from word_level_grammar import WordLevelGrammer
+from modules.word_grammar import WordLevelGrammer
 
 class ContextGrammar:
     def __init__(self):
