@@ -86,6 +86,10 @@ class WordLevelGrammer():
 
         self.hamza_known_words = ["إلينا", "إليكم", "إاليهم", "إليك", "إليه", "إليها", "إليهن", "إلي", "إليهما", "إليهما", "إليكما"]
 
+        self.damayer_joined = ["ك", "كم", "ه", "هم", "هما"]
+
+        self.damayer_separated = ["هو", "هي", "هما", "هم", "هن"]
+
 
 
 
@@ -127,7 +131,7 @@ class WordLevelGrammer():
         
         # remove wow from all the words and try to find verbs again
         for i in range(len(words)):
-            if word.startswith('و'):
+            if word.startswith('و') or word.startswith('ف'):
                 words[i] = words[i][1:]
         sentence = list(zip(words, ['' for _ in range(len(words))]))
         X_new = [word_features(sentence, i) for i in range(len(sentence))]
@@ -154,6 +158,15 @@ class WordLevelGrammer():
             return True
         return False
     
+
+    """
+    remove damayer from the words
+    """
+    def check_damayer(self, word):
+        for damer in self.damayer_joined:
+            if word.endswith(damer):
+                word = word - damer
+                return word, damer
 
 
 
@@ -306,6 +319,7 @@ class WordLevelGrammer():
             elif self.pronouns[words[0]] == ['muthanna', 'fem']:
                 words[0] = 'هاتان'
         return words
+
         
             
         
