@@ -4,12 +4,7 @@ import joblib
 
   # Assuming the parent directory of 'pos_tagging' is the current working directory
 from pos_tagging.commons import word_features
-"""
-this class is responsible for handling the grammer of the arabic words
-using a rule based approach. but it assumes that all the sentences are 
-separated using punctuation marks.
-we are also assuming that there is no errors in the verbs spelling entered by the user
-"""
+
 class WordLevelGrammer():
     
     def __init__(self):
@@ -130,15 +125,16 @@ class WordLevelGrammer():
                 verbs_indeces1.append(words.index(word))
         
         # remove wow from all the words and try to find verbs again
-        for i in range(len(words)):
-            if word.startswith('و') or word.startswith('ف'):
-                words[i] = words[i][1:]
-        sentence = list(zip(words, ['' for _ in range(len(words))]))
+        new_words = words.copy()
+        for i in range(len(new_words)):
+            if new_words[i].startswith('و') or new_words[i].startswith('ف'):
+                new_words[i] = new_words[i][1:]
+        sentence = list(zip(new_words, ['' for _ in range(len(words))]))
         X_new = [word_features(sentence, i) for i in range(len(sentence))]
         y_pred = self.crf_model.predict([X_new])[0]
-        for word, tag in zip(words, y_pred):
+        for word, tag in zip(new_words, y_pred):
             if 'VERB' in tag or 'AUX' in tag:
-                verbs_indeces2.append(words.index(word))
+                verbs_indeces2.append(new_words.index(word))
         
         verbs_indeces = sorted(list(set(verbs_indeces1 + verbs_indeces2)))
         return verbs_indeces
@@ -160,13 +156,17 @@ class WordLevelGrammer():
     
 
     """
-    remove damayer from the words
+    a utility function to remove damayer from the words
+    and return both the damer and the word processed without it
     """
     def check_damayer(self, word):
         for damer in self.damayer_joined:
             if word.endswith(damer):
-                word = word - damer
-                return word, damer
+                word = word[:-len(damer)]
+                if word.endswith('و'):
+                    word = word + 'ا'
+                return [word, damer]
+        return [word, '']
 
 
 
@@ -236,8 +236,6 @@ class WordLevelGrammer():
 
         return words
                                     
-
-        
     
     """
     handle the after proposition words
@@ -251,51 +249,71 @@ class WordLevelGrammer():
                     j += 1
         return words
 
+
     """
     function to handle if the verb is marfou3
+    first check if the verb has a joined dameer
+    we process the verb with check_damer and deal with
+    it as it desn't have any then we add it at the end of the verb
     """
     def handle_verb_shape_marfou3(self, words):
         verb_indeces = self.get_verbs_indeces(words)
         for i in range(len(words)):
             if i in verb_indeces:
-                prev_word = words[i-1]
-                if prev_word not in self.verb_nasb_tools and prev_word not in self.verb_jazm_tools:
+                words[i], damer = self.check_damayer(words[i])
+                if words[i].startswith('ت') or words[i].startswith('ي') or words[i].startswith('نن'):
                     if words[i].endswith('ا') and not words[i].endswith('وا'): # dual case
                         words[i] = words[i] + 'ن'
                     elif words[i].endswith('ين') or words[i].endswith('وا'):
                         words[i] = words[i][:-2] + 'ون'
+                if damer:
+                    if words[i].endswith('وا'):
+                                words[i] = words[i][:-2] + "و"
+                    words[i] = words[i] + damer
 
         return words
-
+    
 
     """
     function to handle if the verb is mansoub 
+    first check if the verb has a joined dameer
+    we process the verb with check_damer and deal with
+    it as it desn't have any then we add it at the end of the verb
     """
     def handle_verb_shape_mansoob(self, words):
         verb_indeces = self.get_verbs_indeces(words)
         for i in range(1, len(words)):
             if i in verb_indeces:
+                words[i], damer = self.check_damayer(words[i])
                 prev_word = words[i-1]
                 if prev_word in self.verb_nasb_tools:
-                    if (words[i].endswith('ون') or words[i].endswith('ين')) and (words[i][0] == 'ي' or words[i][0] == 'ت'):
+                    if (words[i].endswith('ون') or words[i].endswith('ين')):
                         words[i] = words[i][:-2] + "وا"
-                    elif (words[i].endswith('ان') or words[i].endswith('ين')) and (words[i][0] == 'ي' or words[i][0] == 'ت'):
+                    elif (words[i].endswith('ان')):
                         words[i] = words[i][:-1]
+                if damer:
+                    if words[i].endswith('وا'):
+                            words[i] = words[i][:-2] + "و"
+                    words[i] = words[i] + damer
         return words
-    
+        
 
     """
     function to handle if the verb is majzoom
+    first check if the verb has a joined dameer
+    we process the verb with check_damer and deal with
+    it as it desn't have any then we add it at the end of the verb
     """
     def handle_verb_shape_majzoom(self, words):
         verbs_indeces = self.get_verbs_indeces(words)
         for i in range(1, len(words)):
             if i in verbs_indeces:
+                words[i], damer = self.check_damayer(words[i])
                 prev_word = words[i-1]
                 if prev_word in self.verb_jazm_tools:
-                    if (words[i].endswith('ون') or words[i].endswith('ين')) and (words[i][0] == 'ي' or words[i][0] == 'ت'):
+                    if (words[i].endswith('ون') or words[i].endswith('ين')): # and (words[i][0] == 'ي' or words[i][0] == 'ت'):
                         words[i] = words[i][:-2] + "وا"
-                    elif (words[i].endswith('ان') or words[i].endswith('ين')) and (words[i][0] == 'ي' or words[i][0] == 'ت'):
+                    elif (words[i].endswith('ان') or words[i].endswith('ين')): # and (words[i][0] == 'ي' or words[i][0] == 'ت'):
                         words[i] = words[i][:-1]
                     elif words[i].endswith('و') or words[i].endswith('ي') or words[i].endswith('ى'):  # remove 3ela character (don't )
                         words[i] = words[i][:-1]
@@ -305,6 +323,10 @@ class WordLevelGrammer():
                             words[i] = words[i][:-2] + "وا"
                         elif words[i].endswith('ان') or words[i].endswith('ن'):
                             words[i] = words[i][:-1]
+                if damer:
+                    if words[i].endswith('وا'):
+                        words[i] = words[i][:-2] + "و"
+                    words[i] = words[i] + damer
         return words
     
 
@@ -324,16 +346,45 @@ class WordLevelGrammer():
             
         
     """###############################    the main functions      ############################"""
-
+    
+        
     def handle_word_level_errors(self, words):
         hamza_handled_words = self.handle_hamzat(words)
         handeled_words_propsositions = self.handle_after_propositions_words(hamza_handled_words)
-        verb_mansoob_shapes_handeled = self.handle_verb_shape_mansoob(handeled_words_propsositions)
+        verb_marfou3_shapes_handeled = self.handle_verb_shape_marfou3(handeled_words_propsositions)
+        verb_mansoob_shapes_handeled = self.handle_verb_shape_mansoob(verb_marfou3_shapes_handeled)
         verb_majzoom_shapes_handeled = self.handle_verb_shape_majzoom(verb_mansoob_shapes_handeled)
-        verb_marfou3_shapes_handeled = self.handle_verb_shape_marfou3(verb_majzoom_shapes_handeled)
-        pronouns_handled = self.handle_pronouns(verb_marfou3_shapes_handeled)
+        pronouns_handled = self.handle_pronouns(verb_majzoom_shapes_handeled)
         return pronouns_handled
     
+    """
+    same as the above function but with removing the wow character from 
+    the start of each word to cover all uncovered cases
+    """
+    def handle_word_level_errors_without_wows(self, words):
+        new_words = []
+        wow_positions = []
+        for i, word in enumerate(words):
+            if word.startswith('و'):
+                new_words.append('و')
+                new_words.append(word[1:])
+                wow_positions.append(i)
+            else:
+                new_words.append(word)
+        hamza_handled_words = self.handle_hamzat(new_words)
+        handeled_words_propsositions = self.handle_after_propositions_words(hamza_handled_words)
+        verb_marfou3_shapes_handeled = self.handle_verb_shape_marfou3(handeled_words_propsositions)
+        verb_mansoob_shapes_handeled = self.handle_verb_shape_mansoob(verb_marfou3_shapes_handeled)
+        verb_majzoom_shapes_handeled = self.handle_verb_shape_majzoom(verb_mansoob_shapes_handeled)
+        pronouns_handled = self.handle_pronouns(verb_majzoom_shapes_handeled)
+
+        last_words = pronouns_handled
+
+        for i in range(len(last_words)-1):
+            if last_words[i] =='و':
+                last_words[i+1] = 'و' + last_words[i+1]
+                last_words[i] = ' '
+        return last_words
 
 
 

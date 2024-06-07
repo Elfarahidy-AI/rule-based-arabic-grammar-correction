@@ -58,7 +58,22 @@ class ContextGrammar:
     handle jumla ismiya 
     """
     def handle_nominal_sentence(self, words):
+
         pass
+
+    """
+    handle jumla after inna and its sisters
+    """
+    def handle_inna_and_sisters(self, words):
+        pass
+
+
+    """
+    handle adverbs after essential verbs
+    """
+    def handle_adverbs_after_essentials(self, words):
+        pass
+
 
     """
     handle na3t el mufrad
@@ -70,7 +85,9 @@ class ContextGrammar:
                 (not words[i].startswith('ال') and not words[i+1].startswith('ال') and i not in verbs_indeces and i+1 not in verbs_indeces)):
                 if (words[i].endswith('ون') or words[i].endswith('ين') or 
                     words[i].endswith('ان') or words[i].endswith('وا')):
-                    words[i+1] = words[i+1][:-2] + words[i][-2:]
+                    if (words[i+1].endswith('ون') or words[i+1].endswith('ين') or 
+                        words[i+1].endswith('ان') or words[i+1].endswith('وا')):
+                        words[i+1] = words[i+1][:-2] + words[i][-2:]
 
         return words
     
@@ -118,6 +135,8 @@ class ContextGrammar:
     def handle_removal(self, words):
         verbs_indeces = self.wlg.get_verbs_indeces(words)
         for i in range(len(words) - 1):
+            if words[i] in self.wlg.pronouns.keys():
+                continue
             if not words[i].startswith('ال') and words[i+1].startswith('ال') and i not in verbs_indeces:
                 if words[i].endswith('ون'):
                     words[i] = words[i][:-2] + "و"
@@ -130,8 +149,33 @@ class ContextGrammar:
 
     """"####################################################### main function #######################################################"""
     def handle_context_level_errors(self,words):
-        after_hona_honak = self.handle_after_hona_w_honak(words)
+        removal_handeled = self.handle_removal(words)
+        after_hona_honak = self.handle_after_hona_w_honak(removal_handeled)
         after_asmaa_eleshara = self.handle_asmaa_eleshara(after_hona_honak)
         kana_handeled = self.handle_kana(after_asmaa_eleshara)
         adjectives_handeled = self.handle_adjectives(kana_handeled)
         return adjectives_handeled
+    
+
+    def handle_context_level_errors_without_wows(self, words):
+        new_words = []
+        wow_positions = []
+        for i, word in enumerate(words):
+            if word.startswith('و'):
+                new_words.append('و')
+                new_words.append(word[1:])
+                wow_positions.append(i)
+            else:
+                new_words.append(word)
+        removal_handeled = self.handle_removal(new_words)
+        after_hona_honak = self.handle_after_hona_w_honak(removal_handeled)
+        after_asmaa_eleshara = self.handle_asmaa_eleshara(after_hona_honak)
+        kana_handeled = self.handle_kana(after_asmaa_eleshara)
+        adjectives_handeled = self.handle_adjectives(kana_handeled)
+        last_words = adjectives_handeled
+
+        for i in range(len(last_words)-1):
+            if last_words[i] =='و':
+                last_words[i+1] = 'و' + last_words[i+1]
+                last_words[i] = ' '
+        return last_words
