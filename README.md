@@ -13,8 +13,8 @@ Features
 
 #### Clone the repository:
 
-    git clone https://github.com/your-username/arabic-grammar-correction.git
-
+    git clone https://github.com/Elfarahidy-AI/rule-based-arabic-grammar-correction.git
+    
 #### Install the required dependencies:
 
 
