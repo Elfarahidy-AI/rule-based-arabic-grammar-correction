@@ -71,6 +71,7 @@ The following is a list of grammatical errors that the project currently detects
 - ضبط بعض اجزاء الجملة الإسمية
 - ضبط العطف و المعطوف
 - ضبط التوكيد
+- ضبط بعض أجزاء الجمل الإسمية 
 
 ## Data
 
