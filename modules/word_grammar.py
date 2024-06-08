@@ -49,6 +49,7 @@ class WordLevelGrammer():
         self.prepositions = ['في', 'على', 'من', 'إلى', 'عن']
 
         # list of most of al afaal al lazema (only fa3el, no maf3ool)
+        # can be extended with all the forms of these verbs in different tenses
         self.essential_verbs = [
         'أذن', 'أمن', 'أدرك', 'أبل', 'أبحر', 'أتى', 'أجهض', 'أحصن',
         'أشرك', 'افتتح', 'آمن', 'أمسك', 'أوسع', 'استأمن', 'اعتقد',
